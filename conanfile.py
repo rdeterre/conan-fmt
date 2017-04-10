@@ -4,7 +4,7 @@ import os
 
 class FmtConan(ConanFile):
     name = "fmt"
-    version = "3.0.0"
+    version = "3.0.1"
     license = "BSD"
     url = "https://github.com/memsharded/conan-fmt"
     build_policy = "missing"
@@ -26,16 +26,20 @@ class FmtConan(ConanFile):
             self.build_policy = None
 
     def source(self):
-       self.run("git clone https://github.com/fmtlib/fmt")
-       self.run("cd fmt && git checkout 3.0.0")
-       tools.replace_in_file("fmt/CMakeLists.txt", "project(FMT)", """project(FMT)
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()""")
+        tools.download("https://github.com/fmtlib/fmt/releases/download/{}/fmt-{}.zip".format(
+            self.version, self.version), "fmt.zip")
+        tools.unzip("fmt.zip")
+        os.unlink("fmt.zip")
+        os.rename("fmt-{}".format(self.version), "fmt")
+        tools.replace_in_file("fmt/CMakeLists.txt",
+                              "project(FMT)", """project(FMT)
+        include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+        conan_basic_setup()""")
 
     def build(self):
         if self.options.header_only:
             return
-        cmake = CMake(self.settings)        
+        cmake = CMake(self.settings)
         flags = "-DBUILD_SHARED_LIBS=ON" if self.options.shared else ""
         flags += " -DFMT_TEST=OFF -DFMT_INSTALL=OFF -DFMT_DOCS=OFF"
         if self.settings.os != "Windows" and self.options.fPIC:
